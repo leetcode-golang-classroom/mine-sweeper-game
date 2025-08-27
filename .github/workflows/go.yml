@@ -1,0 +1,30 @@
+name: Go
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          check-latest: true
+      - name: Setup dependency
+        run: go mod tidy
+      # - name: Install Ebitengine dependencies (optional, depending on your project)
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y libgl1-mesa-dev xorg-dev # For Linux builds
+      # - name: Test Build
+      #   run: make build-game
+      - name: Test
+        run: go test -v ./internal/game/...
