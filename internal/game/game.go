@@ -10,9 +10,10 @@ type Cell struct {
 
 // Board - 棋盤
 type Board struct {
-	rows  int       // 總共格數
-	cols  int       // 總共列數
-	cells [][]*Cell // 整格棋盤狀態
+	rows                 int              // 總共格數
+	cols                 int              // 總共列數
+	cells                [][]*Cell        // 整格棋盤狀態
+	minePositionShuffler positionShuffler // 亂序器用來安排地雷格子
 }
 
 // Game - 遊戲物件
@@ -23,20 +24,35 @@ type Game struct {
 	remaining   int    // 剩餘需要翻開的格子數
 }
 
-func NewGame(rows, cols, mineNumbers int) *Game {
-	board := createBoard(rows, cols)
+// coord - 紀錄該格字座標
+type coord struct {
+	Row int
+	Col int
+}
+
+// positionShuffler - 亂序器用來安排地雷格子
+type positionShuffler func(coords []coord)
+
+func NewGame(rows, cols, mineCount int) *Game {
+	board := NewBoard(rows, cols)
+	// 設定地雷
+	board.PlaceMines(mineCount)
+	// 計算結果
+	board.CalculateAdjacentMines()
 	return &Game{
 		board:       board,
-		remaining:   rows*cols - mineNumbers,
+		remaining:   rows*cols - mineCount,
 		isGameOver:  false,
 		isPlayerWin: false,
 	}
 }
 
-func createBoard(rows, cols int) *Board {
+// NewBoard - 初始化盤面
+func NewBoard(rows, cols int) *Board {
 	board := &Board{
-		rows: rows,
-		cols: cols,
+		rows:                 rows,
+		cols:                 cols,
+		minePositionShuffler: defaultPositionShuffler,
 	}
 	board.cells = make([][]*Cell, rows)
 	for row := range board.cells {
@@ -47,7 +63,11 @@ func createBoard(rows, cols int) *Board {
 	}
 	return board
 }
-func (g *Game) Init(board *Board) {
+
+func (g *Game) Init(board *Board, minePositionShuffler positionShuffler) {
+	if minePositionShuffler != nil {
+		g.board.minePositionShuffler = minePositionShuffler
+	}
 	// 無效的設定
 	if board == nil || len(board.cells) != board.rows || len(board.cells[0]) != board.cols {
 		return
@@ -60,6 +80,57 @@ func (g *Game) Init(board *Board) {
 			g.board.cells[row][col].IsMine = sourceCell.IsMine
 			g.board.cells[row][col].Revealed = sourceCell.Revealed
 			g.board.cells[row][col].Flagged = sourceCell.Flagged
+		}
+	}
+}
+
+// PlaceMines - 使用 minePositionShuffler 選出 mineCount 個地雷
+func (b *Board) PlaceMines(mineCount int) {
+	// 蒐集所有 coord
+	coords := make([]coord, 0, b.cols*b.rows)
+	for row := range b.cells {
+		for col := range b.cells[row] {
+			coords = append(coords, coord{Row: row, Col: col})
+		}
+	}
+	// 使用 minePositionShuffler 作洗牌
+	b.minePositionShuffler(coords)
+	coordLen := len(coords)
+	// 避免 mineCount 超過 coords 個數
+	if mineCount > coordLen {
+		mineCount = coordLen
+	}
+	// 設定前 mineCount 為地雷
+	for i := 0; i < mineCount; i++ {
+		b.cells[coords[i].Row][coords[i].Col].IsMine = true
+	}
+}
+
+// CalculateAdjacentMines - 計算鄰近地雷個數
+func (b *Board) CalculateAdjacentMines() {
+	// 鄰近所有方向
+	neighborDirections := [8]coord{
+		{Row: -1, Col: -1}, {Row: -1, Col: 0}, {Row: -1, Col: 1},
+		{Row: 0, Col: -1}, {Row: 0, Col: 1},
+		{Row: 1, Col: -1}, {Row: 1, Col: 0}, {Row: 1, Col: 1},
+	}
+	for row := range b.cells {
+		for col := range b.cells[row] {
+			// 當遇到地雷格時 跳過
+			if b.cells[row][col].IsMine {
+				continue
+			}
+			// 開始累計鄰近的地雷數
+			accumCount := 0
+			for _, direction := range neighborDirections {
+				neighborRow, neighborCol := row+direction.Row, col+direction.Col
+				if neighborRow >= 0 && neighborRow < b.rows &&
+					neighborCol >= 0 && neighborCol < b.cols &&
+					b.cells[neighborRow][neighborCol].IsMine {
+					accumCount++
+				}
+			}
+			b.cells[row][col].AdjacenetMines = accumCount
 		}
 	}
 }

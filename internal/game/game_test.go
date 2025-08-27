@@ -362,8 +362,8 @@ func TestGameInit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			game := NewGame(tt.input.rows, tt.input.cols, tt.input.minesNumber)
-			game.Init(tt.input.board)
-			assert.Equal(t, tt.want, game.board)
+			game.Init(tt.input.board, func(coords []coord) {})
+			assert.Equal(t, tt.want.cells, game.board.cells)
 		})
 	}
 }
