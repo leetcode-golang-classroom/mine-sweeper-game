@@ -367,3 +367,243 @@ func TestGameInit(t *testing.T) {
 		})
 	}
 }
+
+func TestCalculateAdjacentMines(t *testing.T) {
+	type field struct {
+		board       *Board
+		rows        int
+		cols        int
+		minesNumber int
+	}
+	tests := []struct {
+		name  string
+		input field
+		want  *Board
+	}{
+		{
+			name: "Test CalculateAdjacentMines with specific input board, row = 5, col = 5, mineNumber = 4",
+			input: field{
+				rows:        5,
+				cols:        5,
+				minesNumber: 4,
+				board: &Board{
+					rows:                 5,
+					cols:                 5,
+					minePositionShuffler: func(coords []coord) {},
+					cells: [][]*Cell{
+						{
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: true,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+						},
+						{
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: true,
+							},
+							{
+								IsMine: false,
+							},
+						},
+						{
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: true,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+						},
+						{
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+						},
+						{
+							{
+								IsMine: true,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+							{
+								IsMine: false,
+							},
+						},
+					},
+				},
+			},
+			want: &Board{
+				rows:                 5,
+				cols:                 5,
+				minePositionShuffler: func(coords []coord) {},
+				cells: [][]*Cell{
+					{
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         true,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 2,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+					},
+					{
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 2,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 3,
+						},
+						{
+							IsMine:         true,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+					},
+					{
+						{
+							IsMine:         false,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         true,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 2,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+					},
+					{
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 2,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 0,
+						},
+					},
+					{
+						{
+							IsMine:         true,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 1,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 0,
+						},
+						{
+							IsMine:         false,
+							AdjacenetMines: 0,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			game := NewGame(tt.input.rows, tt.input.cols, tt.input.minesNumber)
+			game.Init(tt.input.board, func(coords []coord) {})
+			game.board.CalculateAdjacentMines()
+			assert.Equal(t, tt.want.cells, game.board.cells)
+		})
+	}
+}
