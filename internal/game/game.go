@@ -141,3 +141,35 @@ func (b *Board) CalculateAdjacentMines() {
 func (board *Board) GetCell(row, col int) *Cell {
 	return board.cells[row][col]
 }
+
+// Reveal - 從 row, col 開始翻開周圍不是地雷，直到遇到非零的格子
+func (board *Board) Reveal(row, col int) {
+	// 超出邊界
+	if row < 0 || row >= board.rows ||
+		col < 0 || col >= board.cols {
+		return
+	}
+
+	cell := board.cells[row][col]
+	// 已經被揭開
+	if cell.Revealed {
+		return
+	}
+
+	// 標注該格已經被揭開
+	board.cells[row][col].Revealed = true
+
+	// 如果是空白格 (AdjacenetMines = 0, 且不是地雷)
+	if !cell.IsMine && cell.AdjacenetMines == 0 {
+		// 鄰近所有方向
+		neighborDirections := [8]coord{
+			{Row: -1, Col: -1}, {Row: -1, Col: 0}, {Row: -1, Col: 1},
+			{Row: 0, Col: -1}, {Row: 0, Col: 1},
+			{Row: 1, Col: -1}, {Row: 1, Col: 0}, {Row: 1, Col: 1},
+		}
+		for _, direction := range neighborDirections {
+			neighborRow, neighborCol := row+direction.Row, col+direction.Col
+			board.Reveal(neighborRow, neighborCol)
+		}
+	}
+}

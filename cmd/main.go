@@ -10,7 +10,7 @@ import (
 
 func main() {
 	ebiten.SetWindowSize(layout.ScreenWidth, layout.ScreenHeight)
-	ebiten.SetWindowTitle("Mine Sweeper Grid")
+	ebiten.SetWindowTitle("Mine Sweeper Grid - Flood Filled")
 	gameInstance := game.NewGame(layout.Rows, layout.Cols, layout.MineCounts)
 	gameLayout := layout.NewGameLayout(gameInstance)
 	if err := ebiten.RunGame(gameLayout); err != nil {
