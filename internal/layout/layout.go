@@ -28,6 +28,7 @@ func (g *GameLayout) Update() error {
 	return nil
 }
 
+// drawUnTouchCell - 畫出沒有被掀開的格子
 func (g *GameLayout) drawUnTouchCell(screen *ebiten.Image, row, col int) {
 	vector.DrawFilledRect(
 		screen,
@@ -39,10 +40,13 @@ func (g *GameLayout) drawUnTouchCell(screen *ebiten.Image, row, col int) {
 		false,
 	)
 }
+
 func (g *GameLayout) Draw(screen *ebiten.Image) {
 	for row := 0; row < Rows; row++ {
 		for col := 0; col < Cols; col++ {
+			// 取出格子狀態
 			cell := g.gameInstance.Board.GetCell(row, col)
+			// 當格子沒有被掀開時,畫出原本的灰階
 			if !cell.Revealed {
 				g.drawUnTouchCell(screen, row, col)
 			}
