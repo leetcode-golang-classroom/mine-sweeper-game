@@ -47,3 +47,7 @@
 
 ## 示意圖
 ![mine-sweeper display](mine-sweeper.png)
+
+## Flood fill 執行結果
+
+![flood-fill-sample](flood-fill-sample.png)
