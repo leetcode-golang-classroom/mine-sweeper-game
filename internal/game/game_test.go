@@ -363,7 +363,7 @@ func TestGameInit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			game := NewGame(tt.input.rows, tt.input.cols, tt.input.minesNumber)
 			game.Init(tt.input.board, func(coords []coord) {})
-			assert.Equal(t, tt.want.cells, game.board.cells)
+			assert.Equal(t, tt.want.cells, game.Board.cells)
 		})
 	}
 }
@@ -602,8 +602,8 @@ func TestCalculateAdjacentMines(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			game := NewGame(tt.input.rows, tt.input.cols, tt.input.minesNumber)
 			game.Init(tt.input.board, func(coords []coord) {})
-			game.board.CalculateAdjacentMines()
-			assert.Equal(t, tt.want.cells, game.board.cells)
+			game.Board.CalculateAdjacentMines()
+			assert.Equal(t, tt.want.cells, game.Board.cells)
 		})
 	}
 }

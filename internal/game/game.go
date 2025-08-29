@@ -18,7 +18,7 @@ type Board struct {
 
 // Game - 遊戲物件
 type Game struct {
-	board       *Board // 棋盤物件
+	Board       *Board // 棋盤物件
 	isGameOver  bool   // 是否遊戲結束
 	isPlayerWin bool   // 玩家是否獲勝
 	remaining   int    // 剩餘需要翻開的格子數
@@ -40,7 +40,7 @@ func NewGame(rows, cols, mineCount int) *Game {
 	// 計算結果
 	board.CalculateAdjacentMines()
 	return &Game{
-		board:       board,
+		Board:       board,
 		remaining:   rows*cols - mineCount,
 		isGameOver:  false,
 		isPlayerWin: false,
@@ -66,7 +66,7 @@ func NewBoard(rows, cols int) *Board {
 
 func (g *Game) Init(board *Board, minePositionShuffler positionShuffler) {
 	if minePositionShuffler != nil {
-		g.board.minePositionShuffler = minePositionShuffler
+		g.Board.minePositionShuffler = minePositionShuffler
 	}
 	// 無效的設定
 	if board == nil || len(board.cells) != board.rows || len(board.cells[0]) != board.cols {
@@ -76,16 +76,19 @@ func (g *Game) Init(board *Board, minePositionShuffler positionShuffler) {
 	for row := range board.cells {
 		for col := range board.cells[row] {
 			sourceCell := board.cells[row][col]
-			g.board.cells[row][col].AdjacenetMines = sourceCell.AdjacenetMines
-			g.board.cells[row][col].IsMine = sourceCell.IsMine
-			g.board.cells[row][col].Revealed = sourceCell.Revealed
-			g.board.cells[row][col].Flagged = sourceCell.Flagged
+			g.Board.cells[row][col].AdjacenetMines = sourceCell.AdjacenetMines
+			g.Board.cells[row][col].IsMine = sourceCell.IsMine
+			g.Board.cells[row][col].Revealed = sourceCell.Revealed
+			g.Board.cells[row][col].Flagged = sourceCell.Flagged
 		}
 	}
 }
 
 // PlaceMines - 使用 minePositionShuffler 選出 mineCount 個地雷
 func (b *Board) PlaceMines(mineCount int) {
+	if mineCount < 0 {
+		return
+	}
 	// 蒐集所有 coord
 	coords := make([]coord, 0, b.cols*b.rows)
 	for row := range b.cells {
@@ -133,4 +136,8 @@ func (b *Board) CalculateAdjacentMines() {
 			b.cells[row][col].AdjacenetMines = accumCount
 		}
 	}
+}
+
+func (board *Board) GetCell(row, col int) *Cell {
+	return board.cells[row][col]
 }
