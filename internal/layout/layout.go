@@ -15,9 +15,9 @@ const (
 	gridSize     = 32
 	Rows         = 10
 	Cols         = 10
-	PanelHeight  = 36 // 上方面板高度
-	PaddingX     = 60 // 面板內文字左邊距
-	PaddingY     = 20 // 面板
+	PanelHeight  = 36  // 上方面板高度
+	PaddingX     = 100 // 面板內文字左邊距
+	PaddingY     = 20  // 面板
 	ScreenHeight = PanelHeight + gridSize*Rows
 	ScreenWidth  = gridSize * Cols
 	MineCounts   = 9
