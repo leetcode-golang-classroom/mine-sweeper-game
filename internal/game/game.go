@@ -14,6 +14,7 @@ type Board struct {
 	cols                 int              // 總共列數
 	cells                [][]*Cell        // 整格棋盤狀態
 	minePositionShuffler positionShuffler // 亂序器用來安排地雷格子
+	RemainingFlags       int              // 剩餘標記數
 }
 
 // Game - 遊戲物件
@@ -34,7 +35,7 @@ type coord struct {
 type positionShuffler func(coords []coord)
 
 func NewGame(rows, cols, mineCount int) *Game {
-	board := NewBoard(rows, cols)
+	board := NewBoard(rows, cols, mineCount)
 	// 設定地雷
 	board.PlaceMines(mineCount)
 	// 計算結果
@@ -48,11 +49,12 @@ func NewGame(rows, cols, mineCount int) *Game {
 }
 
 // NewBoard - 初始化盤面
-func NewBoard(rows, cols int) *Board {
+func NewBoard(rows, cols, mineCount int) *Board {
 	board := &Board{
 		rows:                 rows,
 		cols:                 cols,
 		minePositionShuffler: defaultPositionShuffler,
+		RemainingFlags:       mineCount,
 	}
 	board.cells = make([][]*Cell, rows)
 	for row := range board.cells {
@@ -142,6 +144,33 @@ func (board *Board) GetCell(row, col int) *Cell {
 	return board.cells[row][col]
 }
 
+// ToggleFlag - 標記地雷
+func (board *Board) ToggleFlag(row, col int) {
+	// 超出邊界
+	if row < 0 || row >= board.rows ||
+		col < 0 || col >= board.cols {
+		return
+	}
+
+	cell := board.cells[row][col]
+	// 已經被揭開
+	if cell.Revealed {
+		return
+	}
+
+	count := 0
+	if cell.Flagged {
+		count--
+	} else {
+		count++
+	}
+	if board.RemainingFlags-count < 0 {
+		return
+	}
+	board.RemainingFlags -= count
+	board.cells[row][col].Flagged = !cell.Flagged
+}
+
 // Reveal - 從 row, col 開始翻開周圍不是地雷，直到遇到非零的格子
 func (board *Board) Reveal(row, col int) {
 	// 超出邊界
@@ -158,6 +187,10 @@ func (board *Board) Reveal(row, col int) {
 
 	// 標注該格已經被揭開
 	board.cells[row][col].Revealed = true
+	if cell.Flagged {
+		board.RemainingFlags++
+		board.cells[row][col].Flagged = false
+	}
 
 	// 如果是空白格 (AdjacenetMines = 0, 且不是地雷)
 	if !cell.IsMine && cell.AdjacenetMines == 0 {
