@@ -58,4 +58,4 @@
 
 ## Is Player Win 執行結果
 
-![player-win-sample](image.png)
+![player-win-sample](player-win-sample.png)
