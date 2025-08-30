@@ -51,3 +51,11 @@
 ## Flood fill 執行結果
 
 ![flood-fill-sample](flood-fill-sample.png)
+
+## Game Over 執行結果
+
+![game-over-sample](game-over-sample.png)
+
+## Is Player Win 執行結果
+
+![player-win-sample](image.png)
