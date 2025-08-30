@@ -11,6 +11,8 @@ import (
 
 var (
 	mplusFaceSource *text.GoTextFaceSource
+	// emojiFace       font.Face
+	emojiFaceSource *text.GoTextFaceSource
 )
 
 func init() {
@@ -19,12 +21,27 @@ func init() {
 		log.Fatal(err)
 	}
 	mplusFaceSource = s
+
+	s, err = text.NewGoTextFaceSource(bytes.NewReader(fonts.NotoEmojiRegular_ttf))
+	if err != nil {
+		log.Fatal(err)
+	}
+	emojiFaceSource = s
 }
+
+const (
+	IsMine = iota + 100
+	IsFlag
+)
 
 func getTileColor(value int) color.Color {
 	switch value {
 	case 0:
 		return color.RGBA{0x77, 0x6e, 0x65, 0xff}
+	case IsFlag:
+		return color.RGBA{0xf9, 0xf6, 0xf2, 0xff}
+	case IsMine:
+		return color.Black
 	default:
 		return color.RGBA{0xf9, 0xf6, 0xf2, 0xff}
 	}

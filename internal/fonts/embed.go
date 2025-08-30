@@ -24,4 +24,7 @@ var (
 
 	//go:embed pressstart2p.ttf
 	PressStart2P_ttf []byte
+
+	//go:embed noto-emoji-regular.ttf
+	NotoEmojiRegular_ttf []byte
 )
