@@ -1,5 +1,7 @@
 package game
 
+import "time"
+
 // Cell - 單一格子
 type Cell struct {
 	IsMine         bool // 是否為地雷
@@ -21,10 +23,10 @@ type Board struct {
 
 // Game - 遊戲物件
 type Game struct {
-	Board       *Board // 棋盤物件
-	IsGameOver  bool   // 是否遊戲結束
-	IsPlayerWin bool   // 玩家是否獲勝
-
+	Board       *Board    // 棋盤物件
+	IsGameOver  bool      // 是否遊戲結束
+	IsPlayerWin bool      // 玩家是否獲勝
+	startTime   time.Time // 遊戲開始時間
 }
 
 // coord - 紀錄該格字座標
@@ -46,6 +48,7 @@ func NewGame(rows, cols, mineCount int) *Game {
 		Board:       board,
 		IsGameOver:  false,
 		IsPlayerWin: false,
+		startTime:   time.Now().UTC(),
 	}
 }
 
@@ -250,4 +253,9 @@ func (board *Board) CheckIsPlayerWin() bool {
 // GetRemainingFlags - 取出有標記旗號的個數
 func (board *Board) GetRemainingFlags() int {
 	return board.remainingFlags
+}
+
+// GetElapsedTime - 取出從 startTime 之後到目前為止的時間
+func (g *Game) GetElapsedTime() int {
+	return int(time.Since(g.startTime).Seconds())
 }

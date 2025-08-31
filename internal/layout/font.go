@@ -33,16 +33,17 @@ const (
 	IsMine = iota + 100
 	IsFlag
 	IsButtonIcon
+	IsClock
 )
 
 func getTileColor(value int) color.Color {
 	switch value {
 	case 0:
 		return color.RGBA{0x77, 0x6e, 0x65, 0xff}
-	case IsFlag:
-		return color.RGBA{0xf9, 0xf6, 0xf2, 0xff}
 	case IsMine, IsButtonIcon:
 		return color.Black
+	case IsClock, IsFlag:
+		return color.RGBA{0xff, 0, 0, 0xff}
 	default:
 		return color.RGBA{0xf9, 0xf6, 0xf2, 0xff}
 	}

@@ -21,7 +21,7 @@ const (
 	PaddingY     = 20 // 面板
 	ScreenHeight = PanelHeight + gridSize*Rows
 	ScreenWidth  = gridSize * Cols
-	MineCounts   = 9
+	MineCounts   = 10
 )
 
 var buttonRectRelativePos = image.Rect(0, 0, 32, 32) // 一個方格大小的　button
@@ -30,9 +30,12 @@ type Coord struct {
 	Row int
 	Col int
 }
+
+// 遊戲畫面狀態
 type GameLayout struct {
-	gameInstance *game.Game
-	ClickCoord   *Coord
+	gameInstance *game.Game //　遊戲物件
+	ClickCoord   *Coord     //　使用者點擊座標
+	elapsedTime  int        // 經過時間
 }
 
 func NewGameLayout(gameInstance *game.Game) *GameLayout {
@@ -49,6 +52,10 @@ func (g *GameLayout) Update() error {
 			yPos <= buttonRectRelativePos.Max.Y+3 {
 			g.Restart()
 		}
+	}
+	// 當遊戲還沒停止時，就更新經過時間
+	if !g.gameInstance.IsGameOver && !g.gameInstance.IsPlayerWin {
+		g.elapsedTime = g.gameInstance.GetElapsedTime()
 	}
 	// 當狀態為遊戲結束
 	if g.gameInstance.IsGameOver || g.gameInstance.IsPlayerWin {
@@ -163,7 +170,7 @@ func (g *GameLayout) drawFlag(screen *ebiten.Image, row, col int) {
 	textXPos := col*gridSize + (gridSize)/2
 	textYPos := PanelHeight + row*gridSize + (gridSize)/2
 	textOpts := &text.DrawOptions{}
-	textOpts.ColorScale.ScaleWithColor(getTileColor(IsFlag))
+	textOpts.ColorScale.ScaleWithColor(getTileColor(-1))
 	textOpts.PrimaryAlign = text.AlignCenter
 	textOpts.SecondaryAlign = text.AlignCenter
 	textOpts.GeoM.Translate(float64(textXPos), float64(textYPos))
@@ -230,6 +237,8 @@ func (g *GameLayout) drawGamePanel(screen *ebiten.Image) {
 	g.drawRemainingFlagInfo(screen)
 	// 畫顯示狀態　button
 	g.drawButtonWithIcon(screen, emojiIcon)
+	// 畫出經過時間
+	g.drawElaspedTimeInfo(screen)
 }
 
 // drawButtonWithIcon　- 繪製 buttonIcon
@@ -279,13 +288,42 @@ func (g *GameLayout) drawRemainingFlagInfo(screen *ebiten.Image) {
 	emojiXPos := len(emojiValue)
 	emojiYPos := PaddingY
 	emojiOpts := &text.DrawOptions{}
-	emojiOpts.ColorScale.ScaleWithColor(getTileColor(-1))
+	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsFlag))
 	emojiOpts.PrimaryAlign = text.AlignStart
 	emojiOpts.SecondaryAlign = text.AlignCenter
 	emojiOpts.GeoM.Translate(float64(emojiXPos), float64(emojiYPos))
 	text.Draw(screen, emojiValue, &text.GoTextFace{
 		Source: emojiFaceSource,
+		Size:   30,
+	}, emojiOpts)
+}
+
+// drawElaspedTimeInfo
+func (g *GameLayout) drawElaspedTimeInfo(screen *ebiten.Image) {
+	// 畫旗子面板（固定在左方）
+	textValue := fmt.Sprintf("%03d", g.elapsedTime)
+	textXPos := ScreenWidth - gridSize/2 + len(textValue)
+	textYPos := PaddingY
+	textOpts := &text.DrawOptions{}
+	textOpts.ColorScale.ScaleWithColor(getTileColor(-1))
+	textOpts.PrimaryAlign = text.AlignEnd
+	textOpts.SecondaryAlign = text.AlignCenter
+	textOpts.GeoM.Translate(float64(textXPos), float64(textYPos))
+	text.Draw(screen, textValue, &text.GoTextFace{
+		Source: mplusFaceSource,
 		Size:   20,
+	}, textOpts)
+	emojiValue := "⏰"
+	emojiXPos := ScreenWidth - 3*gridSize + len(emojiValue)
+	emojiYPos := PaddingY
+	emojiOpts := &text.DrawOptions{}
+	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsClock))
+	emojiOpts.PrimaryAlign = text.AlignStart
+	emojiOpts.SecondaryAlign = text.AlignCenter
+	emojiOpts.GeoM.Translate(float64(emojiXPos), float64(emojiYPos))
+	text.Draw(screen, emojiValue, &text.GoTextFace{
+		Source: emojiFaceSource,
+		Size:   30,
 	}, emojiOpts)
 }
 
