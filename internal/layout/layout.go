@@ -2,6 +2,7 @@ package layout
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,13 +16,15 @@ const (
 	gridSize     = 32
 	Rows         = 10
 	Cols         = 10
-	PanelHeight  = 36  // 上方面板高度
-	PaddingX     = 140 // 面板內文字左邊距
-	PaddingY     = 20  // 面板
+	PanelHeight  = 36 // 上方面板高度
+	PaddingX     = 32 // 面板內文字左邊距
+	PaddingY     = 20 // 面板
 	ScreenHeight = PanelHeight + gridSize*Rows
 	ScreenWidth  = gridSize * Cols
 	MineCounts   = 9
 )
+
+var buttonRectRelativePos = image.Rect(0, 0, 32, 32) // 一個方格大小的　button
 
 type Coord struct {
 	Row int
@@ -37,6 +40,16 @@ func NewGameLayout(gameInstance *game.Game) *GameLayout {
 }
 
 func (g *GameLayout) Update() error {
+	// 偵測　restart icon 有被點擊
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		xPos, yPos := ebiten.CursorPosition()
+		if xPos >= ((ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X) &&
+			xPos <= (ScreenWidth)/2+buttonRectRelativePos.Max.X+0.5*gridSize &&
+			yPos >= buttonRectRelativePos.Min.Y &&
+			yPos <= buttonRectRelativePos.Max.Y+3 {
+			g.Restart()
+		}
+	}
 	// 當狀態為遊戲結束
 	if g.gameInstance.IsGameOver || g.gameInstance.IsPlayerWin {
 		return nil
@@ -207,61 +220,94 @@ func (g *GameLayout) drawBoard(screen *ebiten.Image) {
 	}
 }
 
-// drawRemainFlag
-func (g *GameLayout) drawRemainFlag(screen *ebiten.Image) {
-	status, bgColor := g.getColorStatus()
+// drawGamePanel - 繪製遊戲狀態面板
+func (g *GameLayout) drawGamePanel(screen *ebiten.Image) {
+	emojiIcon, bgColor := g.getColorStatus()
 	panel := ebiten.NewImage(ScreenWidth, PanelHeight)
 	panel.Fill(bgColor)
 	screen.DrawImage(panel, nil)
-	// 畫旗子面板（固定在上方）
-	textValue := fmt.Sprintf("Flags: %d/%d, Status: %s", g.gameInstance.Board.GetRemainingFlags(), MineCounts, status)
-	textXPos := PaddingX
+	// 畫旗子面板（固定在左方）
+	g.drawRemainingFlagInfo(screen)
+	// 畫顯示狀態　button
+	g.drawButtonWithIcon(screen, emojiIcon)
+}
+
+// drawButtonWithIcon　- 繪製 buttonIcon
+func (g *GameLayout) drawButtonWithIcon(screen *ebiten.Image, emojiIcon string) {
+	vector.DrawFilledRect(screen,
+		float32((ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X),
+		float32(buttonRectRelativePos.Min.Y),
+		float32(buttonRectRelativePos.Dx()+0.5*gridSize),
+		float32(buttonRectRelativePos.Dy()+3),
+		color.RGBA{120, 120, 120, 255},
+		true,
+	)
+	vector.DrawFilledCircle(screen, ScreenWidth/2, gridSize/2, 16,
+		color.RGBA{180, 180, 0, 255},
+		true,
+	)
+	emojiValue := emojiIcon
+	emojiXPos := (ScreenWidth) / 2
+	emojiYPos := PaddingY
+	emojiOpts := &text.DrawOptions{}
+	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsButtonIcon))
+	emojiOpts.PrimaryAlign = text.AlignCenter
+	emojiOpts.SecondaryAlign = text.AlignCenter
+	emojiOpts.GeoM.Translate(float64(emojiXPos), float64(emojiYPos))
+	text.Draw(screen, emojiValue, &text.GoTextFace{
+		Source: emojiFaceSource,
+		Size:   32,
+	}, emojiOpts)
+}
+
+// drawRemainingFlagInfo
+func (g *GameLayout) drawRemainingFlagInfo(screen *ebiten.Image) {
+	// 畫旗子面板（固定在左方）
+	textValue := fmt.Sprintf("%03d", g.gameInstance.Board.GetRemainingFlags())
+	textXPos := PaddingX + len(textValue)
 	textYPos := PaddingY
 	textOpts := &text.DrawOptions{}
 	textOpts.ColorScale.ScaleWithColor(getTileColor(-1))
-	textOpts.PrimaryAlign = text.AlignCenter
+	textOpts.PrimaryAlign = text.AlignStart
 	textOpts.SecondaryAlign = text.AlignCenter
 	textOpts.GeoM.Translate(float64(textXPos), float64(textYPos))
 	text.Draw(screen, textValue, &text.GoTextFace{
 		Source: mplusFaceSource,
 		Size:   20,
 	}, textOpts)
+	emojiValue := "🚩"
+	emojiXPos := len(emojiValue)
+	emojiYPos := PaddingY
+	emojiOpts := &text.DrawOptions{}
+	emojiOpts.ColorScale.ScaleWithColor(getTileColor(-1))
+	emojiOpts.PrimaryAlign = text.AlignStart
+	emojiOpts.SecondaryAlign = text.AlignCenter
+	emojiOpts.GeoM.Translate(float64(emojiXPos), float64(emojiYPos))
+	text.Draw(screen, emojiValue, &text.GoTextFace{
+		Source: emojiFaceSource,
+		Size:   20,
+	}, emojiOpts)
 }
 
 func (g *GameLayout) Draw(screen *ebiten.Image) {
 	g.drawBoard(screen)
-	g.drawRemainFlag(screen)
-	if g.gameInstance.IsGameOver {
-		g.drawCoverOnGameOver(screen)
-	}
+	g.drawGamePanel(screen)
 }
 
 func (g *GameLayout) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return ScreenWidth, ScreenHeight
 }
 
-// drawCoverOnGameOver - 畫出無法操作的灰色遮罩
-func (g *GameLayout) drawCoverOnGameOver(screen *ebiten.Image) {
-	w, h := ScreenWidth, ScreenHeight-PanelHeight
-	vector.DrawFilledRect(
-		screen,
-		0, PanelHeight, // x, y
-		float32(w), float32(h), // width, height
-		color.RGBA{0, 0, 0, 128}, // 半透明黑色 (128 = 約 50% 透明)
-		false,
-	)
-}
-
 // getColorStatus - 根據 IsGameOver 與 IsPlayerWin 來找出對 message, bgColor
 func (g *GameLayout) getColorStatus() (string, color.RGBA) {
 	bgColor := color.RGBA{100, 100, 0x10, 0xFF}
-	status := "playing"
+	status := "😀"
 	if g.gameInstance.IsGameOver {
-		status = "game over"
+		status = "😵"
 		bgColor = color.RGBA{150, 0, 0x10, 0xFF}
 	}
 	if g.gameInstance.IsPlayerWin {
-		status = "you win"
+		status = "😎"
 		bgColor = color.RGBA{200, 200, 0, 0xFF}
 	}
 	return status, bgColor
@@ -280,4 +326,9 @@ func (g *GameLayout) handlePositionClickEvent(listenHandler func(row, col int)) 
 			listenHandler(row, col)
 		}
 	}
+}
+
+// Restart - 重新建立 Game 狀態
+func (g *GameLayout) Restart() {
+	g.gameInstance = game.NewGame(Rows, Cols, MineCounts)
 }
