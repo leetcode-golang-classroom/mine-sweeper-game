@@ -25,8 +25,8 @@ func TestGameInit(t *testing.T) {
 				cols:        5,
 				minesNumber: 5,
 				board: &Board{
-					rows: 5,
-					cols: 5,
+					Rows: 5,
+					Cols: 5,
 					cells: [][]*Cell{
 						{
 							{
@@ -192,8 +192,8 @@ func TestGameInit(t *testing.T) {
 				},
 			},
 			want: &Board{
-				rows: 5,
-				cols: 5,
+				Rows: 5,
+				Cols: 5,
 				cells: [][]*Cell{
 					{
 						{
@@ -387,8 +387,8 @@ func TestCalculateAdjacentMines(t *testing.T) {
 				cols:        5,
 				minesNumber: 4,
 				board: &Board{
-					rows:                 5,
-					cols:                 5,
+					Rows:                 5,
+					Cols:                 5,
 					minePositionShuffler: func(coords []coord) {},
 					cells: [][]*Cell{
 						{
@@ -480,8 +480,8 @@ func TestCalculateAdjacentMines(t *testing.T) {
 				},
 			},
 			want: &Board{
-				rows:                 5,
-				cols:                 5,
+				Rows:                 5,
+				Cols:                 5,
 				minePositionShuffler: func(coords []coord) {},
 				cells: [][]*Cell{
 					{

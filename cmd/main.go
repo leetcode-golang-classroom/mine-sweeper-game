@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -9,9 +10,9 @@ import (
 )
 
 func main() {
-	ebiten.SetWindowSize(layout.ScreenWidth, layout.ScreenHeight)
-	ebiten.SetWindowTitle("Mine Sweeper Grid - Flood Filled")
-	gameInstance := game.NewGame(layout.Rows, layout.Cols, layout.MineCounts)
+	ebiten.SetWindowSize(layout.DefaultScreenWidth, layout.DefaultScreenHeight)
+	ebiten.SetWindowTitle(fmt.Sprintf("%s Mine Sweeper Grid", layout.LevelMessage[layout.Easy]))
+	gameInstance := game.NewGame(layout.DefaultRows, layout.DefaultCols, layout.DefaultMineCounts)
 	gameLayout := layout.NewGameLayout(gameInstance)
 	if err := ebiten.RunGame(gameLayout); err != nil {
 		log.Fatal(err)

@@ -13,17 +13,17 @@ import (
 )
 
 const (
-	gridSize     = 32
-	Rows         = 10
-	Cols         = 10
-	PanelHeight  = 36 // 上方面板高度
-	PaddingX     = 32 // 面板內文字左邊距
-	PaddingY     = 20 // 面板
-	ScreenHeight = PanelHeight + gridSize*Rows
-	ScreenWidth  = gridSize * Cols
-	MineCounts   = 10
+	gridSize    = 32
+	PanelHeight = 72 // 上方面板高度
+	PaddingX    = 32 // 面板內文字左邊距
+	PaddingY    = 20 // 面板
 )
 
+var DefaultRows = LevelSetupMap[Easy].Rows
+var DefaultCols = LevelSetupMap[Easy].Cols
+var DefaultScreenHeight = PanelHeight + gridSize*DefaultRows
+var DefaultScreenWidth = gridSize * DefaultCols
+var DefaultMineCounts = LevelSetupMap[Easy].MineCounts
 var buttonRectRelativePos = image.Rect(0, 0, 32, 32) // 一個方格大小的　button
 
 type Coord struct {
@@ -36,20 +36,42 @@ type GameLayout struct {
 	gameInstance *game.Game //　遊戲物件
 	ClickCoord   *Coord     //　使用者點擊座標
 	elapsedTime  int        // 經過時間
+	Rows         int        // 紀錄遊戲 Row 大小
+	Cols         int        // 紀錄遊戲 Col 大小
+	MineCounts   int        // 紀錄 MineCounts
+	ScreenHeight int
+	ScreenWidth  int
+	level        Level
 }
 
 func NewGameLayout(gameInstance *game.Game) *GameLayout {
-	return &GameLayout{gameInstance: gameInstance, ClickCoord: &Coord{}}
+	return &GameLayout{gameInstance: gameInstance, ClickCoord: &Coord{},
+		Rows:       gameInstance.Board.Rows,
+		Cols:       gameInstance.Board.Cols,
+		MineCounts: gameInstance.MineCounts,
+		level:      Easy,
+	}
 }
 
 func (g *GameLayout) Update() error {
+	// 偵測　level icon 有被點擊
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		xPos, yPos := ebiten.CursorPosition()
+		if xPos >= ((g.ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X) &&
+			xPos <= (g.ScreenWidth)/2+buttonRectRelativePos.Max.X+0.5*gridSize &&
+			yPos >= buttonRectRelativePos.Min.Y &&
+			yPos <= buttonRectRelativePos.Max.Y+3 {
+			g.ChangeLevel()
+			g.Restart()
+		}
+	}
 	// 偵測　restart icon 有被點擊
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		xPos, yPos := ebiten.CursorPosition()
-		if xPos >= ((ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X) &&
-			xPos <= (ScreenWidth)/2+buttonRectRelativePos.Max.X+0.5*gridSize &&
-			yPos >= buttonRectRelativePos.Min.Y &&
-			yPos <= buttonRectRelativePos.Max.Y+3 {
+		if xPos >= ((g.ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X) &&
+			xPos <= (g.ScreenWidth)/2+buttonRectRelativePos.Max.X+0.5*gridSize &&
+			yPos >= gridSize+buttonRectRelativePos.Min.Y &&
+			yPos <= gridSize+buttonRectRelativePos.Max.Y+3 {
 			g.Restart()
 		}
 	}
@@ -211,8 +233,8 @@ func (g *GameLayout) drawRevealedCell(screen *ebiten.Image, row, col int, cell *
 
 // drawBoard - 畫出目前盤面狀態
 func (g *GameLayout) drawBoard(screen *ebiten.Image) {
-	for row := 0; row < Rows; row++ {
-		for col := 0; col < Cols; col++ {
+	for row := 0; row < g.Rows; row++ {
+		for col := 0; col < g.Cols; col++ {
 			// 取出格子狀態
 			cell := g.gameInstance.Board.GetCell(row, col)
 
@@ -230,7 +252,7 @@ func (g *GameLayout) drawBoard(screen *ebiten.Image) {
 // drawGamePanel - 繪製遊戲狀態面板
 func (g *GameLayout) drawGamePanel(screen *ebiten.Image) {
 	emojiIcon, bgColor := g.getColorStatus()
-	panel := ebiten.NewImage(ScreenWidth, PanelHeight)
+	panel := ebiten.NewImage(g.ScreenWidth, PanelHeight)
 	panel.Fill(bgColor)
 	screen.DrawImage(panel, nil)
 	// 畫旗子面板（固定在左方）
@@ -239,25 +261,72 @@ func (g *GameLayout) drawGamePanel(screen *ebiten.Image) {
 	g.drawButtonWithIcon(screen, emojiIcon)
 	// 畫出經過時間
 	g.drawElaspedTimeInfo(screen)
+	// 畫出 Level Info Button
+	g.drawLevelInfo(screen)
+}
+
+func (g *GameLayout) drawLevelInfo(screen *ebiten.Image) {
+	// 畫Level（固定在左方）
+	textValue := "Level:"
+	textXPos := len(textValue)
+	textYPos := PaddingY
+	textOpts := &text.DrawOptions{}
+	textOpts.ColorScale.ScaleWithColor(getTileColor(-1))
+	textOpts.PrimaryAlign = text.AlignStart
+	textOpts.SecondaryAlign = text.AlignCenter
+	textOpts.GeoM.Translate(float64(textXPos), float64(textYPos))
+	text.Draw(screen, textValue, &text.GoTextFace{
+		Source: mplusFaceSource,
+		Size:   20,
+	}, textOpts)
+	emojiIcon := LevelIconMap[g.level]
+	g.drawLevelButtonWithIcon(screen, emojiIcon)
+}
+
+func (g *GameLayout) drawLevelButtonWithIcon(screen *ebiten.Image, emojiIcon string) {
+	vector.DrawFilledRect(screen,
+		float32((g.ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X),
+		float32(buttonRectRelativePos.Min.Y),
+		float32(buttonRectRelativePos.Dx()+0.5*gridSize),
+		float32(buttonRectRelativePos.Dy()+4),
+		color.RGBA{120, 120, 120, 255},
+		true,
+	)
+	vector.DrawFilledCircle(screen, float32(g.ScreenWidth/2), gridSize/2, 16,
+		LevelColorMap[g.level],
+		true,
+	)
+	emojiValue := emojiIcon
+	emojiXPos := (g.ScreenWidth) / 2
+	emojiYPos := PaddingY
+	emojiOpts := &text.DrawOptions{}
+	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsButtonIcon))
+	emojiOpts.PrimaryAlign = text.AlignCenter
+	emojiOpts.SecondaryAlign = text.AlignCenter
+	emojiOpts.GeoM.Translate(float64(emojiXPos), float64(emojiYPos))
+	text.Draw(screen, emojiValue, &text.GoTextFace{
+		Source: emojiFaceSource,
+		Size:   32,
+	}, emojiOpts)
 }
 
 // drawButtonWithIcon　- 繪製 buttonIcon
 func (g *GameLayout) drawButtonWithIcon(screen *ebiten.Image, emojiIcon string) {
 	vector.DrawFilledRect(screen,
-		float32((ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X),
-		float32(buttonRectRelativePos.Min.Y),
+		float32((g.ScreenWidth-1.5*gridSize)/2+buttonRectRelativePos.Min.X),
+		float32(gridSize+buttonRectRelativePos.Min.Y),
 		float32(buttonRectRelativePos.Dx()+0.5*gridSize),
-		float32(buttonRectRelativePos.Dy()+3),
+		float32(buttonRectRelativePos.Dy()+4),
 		color.RGBA{120, 120, 120, 255},
 		true,
 	)
-	vector.DrawFilledCircle(screen, ScreenWidth/2, gridSize/2, 16,
+	vector.DrawFilledCircle(screen, float32(g.ScreenWidth/2), gridSize+gridSize/2, 16,
 		color.RGBA{180, 180, 0, 255},
 		true,
 	)
 	emojiValue := emojiIcon
-	emojiXPos := (ScreenWidth) / 2
-	emojiYPos := PaddingY
+	emojiXPos := (g.ScreenWidth) / 2
+	emojiYPos := gridSize + PaddingY
 	emojiOpts := &text.DrawOptions{}
 	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsButtonIcon))
 	emojiOpts.PrimaryAlign = text.AlignCenter
@@ -274,7 +343,7 @@ func (g *GameLayout) drawRemainingFlagInfo(screen *ebiten.Image) {
 	// 畫旗子面板（固定在左方）
 	textValue := fmt.Sprintf("%03d", g.gameInstance.Board.GetRemainingFlags())
 	textXPos := PaddingX + len(textValue)
-	textYPos := PaddingY
+	textYPos := gridSize + PaddingY
 	textOpts := &text.DrawOptions{}
 	textOpts.ColorScale.ScaleWithColor(getTileColor(-1))
 	textOpts.PrimaryAlign = text.AlignStart
@@ -286,7 +355,7 @@ func (g *GameLayout) drawRemainingFlagInfo(screen *ebiten.Image) {
 	}, textOpts)
 	emojiValue := "🚩"
 	emojiXPos := len(emojiValue)
-	emojiYPos := PaddingY
+	emojiYPos := gridSize + PaddingY
 	emojiOpts := &text.DrawOptions{}
 	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsFlag))
 	emojiOpts.PrimaryAlign = text.AlignStart
@@ -302,8 +371,8 @@ func (g *GameLayout) drawRemainingFlagInfo(screen *ebiten.Image) {
 func (g *GameLayout) drawElaspedTimeInfo(screen *ebiten.Image) {
 	// 畫旗子面板（固定在左方）
 	textValue := fmt.Sprintf("%03d", g.elapsedTime)
-	textXPos := ScreenWidth - gridSize/2 + len(textValue)
-	textYPos := PaddingY
+	textXPos := g.ScreenWidth - gridSize/2 + len(textValue)
+	textYPos := gridSize + PaddingY
 	textOpts := &text.DrawOptions{}
 	textOpts.ColorScale.ScaleWithColor(getTileColor(-1))
 	textOpts.PrimaryAlign = text.AlignEnd
@@ -314,8 +383,8 @@ func (g *GameLayout) drawElaspedTimeInfo(screen *ebiten.Image) {
 		Size:   20,
 	}, textOpts)
 	emojiValue := "⏰"
-	emojiXPos := ScreenWidth - 3*gridSize + len(emojiValue)
-	emojiYPos := PaddingY
+	emojiXPos := g.ScreenWidth - 3*gridSize + len(emojiValue)
+	emojiYPos := gridSize + PaddingY
 	emojiOpts := &text.DrawOptions{}
 	emojiOpts.ColorScale.ScaleWithColor(getTileColor(IsClock))
 	emojiOpts.PrimaryAlign = text.AlignStart
@@ -333,7 +402,9 @@ func (g *GameLayout) Draw(screen *ebiten.Image) {
 }
 
 func (g *GameLayout) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return ScreenWidth, ScreenHeight
+	g.ScreenHeight = PanelHeight + gridSize*g.Rows
+	g.ScreenWidth = gridSize * g.Cols
+	return g.ScreenWidth, g.ScreenHeight
 }
 
 // getColorStatus - 根據 IsGameOver 與 IsPlayerWin 來找出對 message, bgColor
@@ -360,7 +431,7 @@ func (g *GameLayout) handlePositionClickEvent(listenHandler func(row, col int)) 
 		col := xPos / gridSize
 		g.ClickCoord.Row = row
 		g.ClickCoord.Col = col
-		if row >= 0 && row < Rows && col >= 0 && col < Cols {
+		if row >= 0 && row < g.Rows && col >= 0 && col < g.Cols {
 			listenHandler(row, col)
 		}
 	}
@@ -368,5 +439,16 @@ func (g *GameLayout) handlePositionClickEvent(listenHandler func(row, col int)) 
 
 // Restart - 重新建立 Game 狀態
 func (g *GameLayout) Restart() {
-	g.gameInstance = game.NewGame(Rows, Cols, MineCounts)
+	g.Rows = LevelSetupMap[g.level].Rows
+	g.Cols = LevelSetupMap[g.level].Cols
+	g.MineCounts = LevelSetupMap[g.level].MineCounts
+	g.ScreenHeight = PanelHeight + gridSize*g.Rows
+	g.ScreenWidth = gridSize * g.Cols
+	ebiten.SetWindowSize(g.ScreenWidth, g.ScreenHeight)
+	ebiten.SetWindowTitle(fmt.Sprintf("%s Mine Sweeper Grid", LevelMessage[g.level]))
+	g.gameInstance = game.NewGame(g.Rows, g.Cols, g.MineCounts)
+}
+
+func (g *GameLayout) ChangeLevel() {
+	g.level = (g.level + 1) % 3
 }

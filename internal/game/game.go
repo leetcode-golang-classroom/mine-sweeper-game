@@ -12,8 +12,8 @@ type Cell struct {
 
 // Board - 棋盤
 type Board struct {
-	rows                     int              // 總共格數
-	cols                     int              // 總共列數
+	Rows                     int              // 總共格數
+	Cols                     int              // 總共列數
 	cells                    [][]*Cell        // 整格棋盤狀態
 	minePositionShuffler     positionShuffler // 亂序器用來安排地雷格子
 	remainingFlags           int              // 剩餘標記數
@@ -27,6 +27,7 @@ type Game struct {
 	IsGameOver  bool      // 是否遊戲結束
 	IsPlayerWin bool      // 玩家是否獲勝
 	startTime   time.Time // 遊戲開始時間
+	MineCounts  int       // minecounts
 }
 
 // coord - 紀錄該格字座標
@@ -49,14 +50,15 @@ func NewGame(rows, cols, mineCount int) *Game {
 		IsGameOver:  false,
 		IsPlayerWin: false,
 		startTime:   time.Now().UTC(),
+		MineCounts:  mineCount,
 	}
 }
 
 // NewBoard - 初始化盤面
 func NewBoard(rows, cols, mineCount int) *Board {
 	board := &Board{
-		rows:                     rows,
-		cols:                     cols,
+		Rows:                     rows,
+		Cols:                     cols,
 		minePositionShuffler:     defaultPositionShuffler,
 		remainingFlags:           mineCount,
 		remainingUnRevealedCells: rows*cols - mineCount,
@@ -76,7 +78,7 @@ func (g *Game) Init(board *Board, minePositionShuffler positionShuffler) {
 		g.Board.minePositionShuffler = minePositionShuffler
 	}
 	// 無效的設定
-	if board == nil || len(board.cells) != board.rows || len(board.cells[0]) != board.cols {
+	if board == nil || len(board.cells) != board.Rows || len(board.cells[0]) != board.Cols {
 		return
 	}
 	// 設定資料
@@ -97,7 +99,7 @@ func (b *Board) PlaceMines(mineCount int) {
 		return
 	}
 	// 蒐集所有 coord
-	coords := make([]coord, 0, b.cols*b.rows)
+	coords := make([]coord, 0, b.Cols*b.Rows)
 	for row := range b.cells {
 		for col := range b.cells[row] {
 			coords = append(coords, coord{Row: row, Col: col})
@@ -135,8 +137,8 @@ func (b *Board) CalculateAdjacentMines() {
 			accumCount := 0
 			for _, direction := range neighborDirections {
 				neighborRow, neighborCol := row+direction.Row, col+direction.Col
-				if neighborRow >= 0 && neighborRow < b.rows &&
-					neighborCol >= 0 && neighborCol < b.cols &&
+				if neighborRow >= 0 && neighborRow < b.Rows &&
+					neighborCol >= 0 && neighborCol < b.Cols &&
 					b.cells[neighborRow][neighborCol].IsMine {
 					accumCount++
 				}
@@ -153,8 +155,8 @@ func (board *Board) GetCell(row, col int) *Cell {
 // ToggleFlag - 標記地雷
 func (board *Board) ToggleFlag(row, col int) {
 	// 超出邊界
-	if row < 0 || row >= board.rows ||
-		col < 0 || col >= board.cols {
+	if row < 0 || row >= board.Rows ||
+		col < 0 || col >= board.Cols {
 		return
 	}
 
@@ -191,8 +193,8 @@ func (board *Board) Reveal(row, col int) {
 		curRow, curCol := cellCoord.Row, cellCoord.Col
 
 		// 超出邊界
-		if curRow < 0 || curRow >= board.rows ||
-			curCol < 0 || curCol >= board.cols {
+		if curRow < 0 || curRow >= board.Rows ||
+			curCol < 0 || curCol >= board.Cols {
 			continue
 		}
 
