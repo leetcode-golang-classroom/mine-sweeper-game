@@ -12,3 +12,6 @@ coverage:
 
 test:
 	@go test -v ./internal/game/...
+
+build-wasm:
+	@env GOOS=js GOARCH=wasm go build -o web/mine-sweeper.wasm ./cmd/main.go
